@@ -67,6 +67,7 @@ class Config:
         parser.add_argument('--sigma', type=float, default=2.0, help='Number of stdevs to walk in visualize.py')
         parser.add_argument('--inputs', type=str, default=None, help='Path to directory with named components')
         parser.add_argument('--seed', type=int, default=None, help='Seed used in decomposition')
+        parser.add_argument('--channel_multiplier', type=int, default=2, help='Channel multiplier for StyleGAN2')
         args = parser.parse_args(args)
 
         return self.from_dict(args.__dict__)
