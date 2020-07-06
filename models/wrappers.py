@@ -93,12 +93,13 @@ class BaseModel(AbstractBaseClass, torch.nn.Module):
 
 # PyTorch port of StyleGAN 2
 class StyleGAN2(BaseModel):
-    def __init__(self, device, class_name, truncation=1.0, use_w=False):
+    def __init__(self, device, class_name, truncation=1.0, use_w=False, channel_multiplier=2):
         super(StyleGAN2, self).__init__('StyleGAN2', class_name or 'ffhq')
         self.device = device
         self.truncation = truncation
         self.latent_avg = None
         self.w_primary = use_w # use W as primary latent space?
+        self.channel_multiplier = channel_multiplier
 
         # Image widths
         configs = {
@@ -114,10 +115,12 @@ class StyleGAN2(BaseModel):
             'places': 256,
         }
 
-        assert self.outclass in configs, \
-            f'Invalid StyleGAN2 class {self.outclass}, should be one of [{", ".join(configs.keys())}]'
-
-        self.resolution = configs[self.outclass]
+        if self.outclass in configs:
+            self.resolution = configs[self.outclass]
+        else:
+            f'Taking StyleGAN2 class {self.outclass} to be resolution'
+            self.resolution = int(self.outclass)
+        
         self.name = f'StyleGAN2-{self.outclass}'
         self.has_latent_residual = True
         self.load_model()
@@ -152,7 +155,7 @@ class StyleGAN2(BaseModel):
         checkpoint_root = os.environ.get('GANCONTROL_CHECKPOINT_DIR', Path(__file__).parent / 'checkpoints')
         checkpoint = Path(checkpoint_root) / f'stylegan2/stylegan2_{self.outclass}_{self.resolution}.pt'
         
-        self.model = stylegan2.Generator(self.resolution, 512, 8).to(self.device)
+        self.model = stylegan2.Generator(self.resolution, 512, 8, channel_multiplier=self.channel_multiplier).to(self.device)
 
         if not checkpoint.is_file():
             os.makedirs(checkpoint.parent, exist_ok=True)
@@ -637,6 +640,7 @@ def get_model(name, output_class, device, **kwargs):
     # Check if optionally provided existing model can be reused
     inst = kwargs.get('inst', None)
     model = kwargs.get('model', None)
+    channel_multiplier = kwargs.get('channel_multiplier', 2) # speciifcally for stylegan2
     
     if inst or model:
         cached = model or inst.model
@@ -661,7 +665,7 @@ def get_model(name, output_class, device, **kwargs):
     elif name == 'StyleGAN':
         model = StyleGAN(device, class_name=output_class)
     elif name == 'StyleGAN2':
-        model = StyleGAN2(device, class_name=output_class)
+        model = StyleGAN2(device, class_name=output_class, channel_multiplier=channel_multiplier)
     else:
         raise RuntimeError(f'Unknown model {name}')
 
