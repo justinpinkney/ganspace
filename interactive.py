@@ -140,7 +140,7 @@ def setup_model():
     torch.backends.cudnn.benchmark = True
 
     # Load model
-    inst = get_instrumented_model(model_name, class_name, layer_name, torch.device('cuda'), use_w=args.use_w)
+    inst = get_instrumented_model(model_name, class_name, layer_name, torch.device('cuda'), use_w=args.use_w, channel_multiplier=args.channel_multiplier)
     model = inst.model
 
     feat_shape = inst.feature_shape[layer_name]
